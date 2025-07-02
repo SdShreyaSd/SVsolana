@@ -1,0 +1,43 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
+# 1. Load UCI Adult dataset
+url = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
+cols = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status',
+        'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss',
+        'hours-per-week', 'native-country', 'income']
+df = pd.read_csv(url, names=cols, na_values=' ?', skipinitialspace=True)
+df = df.dropna()
+
+# 2. Encode categorical features
+df['income'] = (df['income'] == '>50K').astype(int)
+df['sex'] = (df['sex'] == 'Male').astype(int)  # 1 = Male, 0 = Female
+X = pd.get_dummies(df.drop('income', axis=1), drop_first=True)
+y = df['income']
+sex = df['sex']
+
+# 3. Train/test split
+X_train, X_test, y_train, y_test, sex_train, sex_test = train_test_split(X, y, sex, test_size=0.3, random_state=42)
+
+# 4. Train base model
+model = LogisticRegression(max_iter=500)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+
+# 5. Accuracy by sex (check bias)
+acc_male = accuracy_score(y_test[sex_test == 1], y_pred[sex_test == 1])
+acc_female = accuracy_score(y_test[sex_test == 0], y_pred[sex_test == 0])
+print(f"Before Reweighting - Accuracy Male: {acc_male:.2f}, Female: {acc_female:.2f}")
+
+# 6. Reweight training samples to balance sex
+weights = sex_train.map({0: 1.5, 1: 1.0})  # Give more weight to females
+model_reweight = LogisticRegression(max_iter=500)
+model_reweight.fit(X_train, y_train, sample_weight=weights)
+y_pred_rw = model_reweight.predict(X_test)
+
+# 7. Accuracy by sex after reweighting
+acc_male_rw = accuracy_score(y_test[sex_test == 1], y_pred_rw[sex_test == 1])
+acc_female_rw = accuracy_score(y_test[sex_test == 0], y_pred_rw[sex_test == 0])
+print(f"After Reweighting - Accuracy Male: {acc_male_rw:.2f}, Female: {acc_female_rw:.2f}")
