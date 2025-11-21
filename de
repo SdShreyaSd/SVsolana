@@ -1,0 +1,13 @@
+import pandas as pd 
+import seaborn as sns 
+import glob 
+# Ingest (read all CSVs into one DataFrame) 
+files = glob.glob("data/quarter_*.csv") 
+df = pd.concat([pd.read_csv(f) for f in files], ignore_index=True) 
+# Transform 
+# Example: compute total sales by quarter 
+quarter_sales = df.groupby("quarter")["sales"].sum().reset_index() 
+# Visualize 
+sns.boxplot(data=df, x="quarter", y="sales") 
+plt.title("Sales Distribution per Quarter") 
+plt.show() 
