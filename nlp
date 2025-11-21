@@ -1,0 +1,18 @@
+corpus = ["I love NLP", "I love machine learning", "NLP is fun", "I love
+learning NLP"]
+S = [["<s>"] + s.lower().split() + ["</s>"] for s in corpus]
+uni = Counter(w for sent in S for w in sent)
+bi = Counter((sent[i], sent[i+1]) for sent in S for i in range(len(sent)-
+1))
+V = len(uni)
+def bigram_prob(prev, w):
+return (bi[(prev, w)] + 1) / (uni[prev] + V) # Add-one smoothing
+def sent_prob(sentence):
+ws = ["<s>"] + sentence.lower().split() + ["</s>"]
+p = 1.0
+for a, b in zip(ws, ws[1:]):
+p *= bigram_prob(a, b)
+return p
+print("Unigram counts:", uni)
+print("Bigram counts :", bi)
+print("P('I love nlp') =", sent_prob("I love nlp"))
